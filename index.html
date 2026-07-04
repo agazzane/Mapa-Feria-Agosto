@@ -413,6 +413,21 @@
   .mob-readonly-title { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 6px; }
   .mob-readonly-items { display: flex; flex-wrap: wrap; gap: 6px; }
   .mob-readonly-chip { padding: 3px 10px; background: white; border: 1px solid var(--border); border-radius: 100px; font-size: 12px; font-weight: 500; color: var(--text); }
+
+  /* ── COMENTARIOS (acordeón) ── */
+  .comentarios-section { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .comentarios-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); cursor: pointer; user-select: none; }
+  .comentarios-header-left { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--text2); }
+  .comentarios-badge { color: var(--accent); font-size: 14px; line-height: 1; }
+  .comentarios-chevron { font-size: 11px; color: var(--text3); transition: transform .15s; display: inline-block; }
+  .comentarios-chevron.open { transform: rotate(180deg); }
+  .comentarios-body { padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border); }
+  .comentarios-textarea { width: 100%; min-height: 64px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); color: var(--text); background: var(--bg); resize: vertical; }
+  .comentarios-btn { margin-top: 8px; width: 100%; padding: 9px; border: none; border-radius: var(--radius-sm); background: var(--accent); color: white; font-size: 13px; font-weight: 600; font-family: var(--font); cursor: pointer; }
+  .comentarios-btn:disabled { opacity: .5; cursor: default; }
+  .comentarios-msg { margin-top: 6px; font-size: 12px; min-height: 14px; }
+  .comentarios-msg.ok  { color: #1a7f3c; }
+  .comentarios-msg.err { color: #b91c1c; }
   .mob-open-btn { width: 100%; margin-top: 10px; padding: 9px; background: var(--bg); color: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background .18s; }
   .mob-open-btn:active { background: #e5e5ea; }
 
@@ -782,6 +797,22 @@
       </div>
     </div>
 
+    <!-- COMENTARIOS (texto libre, solo perfil 1 y 3) -->
+    <div class="comentarios-section" id="comentariosSection" style="display:none">
+      <div class="comentarios-header" onclick="toggleComentarios()">
+        <div class="comentarios-header-left">
+          <span>📝 Comentarios</span>
+          <span class="comentarios-badge" id="comentariosBadge" style="display:none">●</span>
+        </div>
+        <span class="comentarios-chevron" id="comentariosChevron">▾</span>
+      </div>
+      <div class="comentarios-body" id="comentariosBody" style="display:none">
+        <textarea class="comentarios-textarea" id="comentariosTexto" placeholder="Escribí un comentario para este stand..." maxlength="500" oninput="checkComentariosBtn()"></textarea>
+        <button class="comentarios-btn" id="comentariosBtn" onclick="guardarComentario()" disabled>Guardar comentario</button>
+        <div class="comentarios-msg" id="comentariosMsg"></div>
+      </div>
+    </div>
+
     <!-- ASIGNAR FERIANTE (solo cuando el stand está Disponible) -->
     <div class="assign-section" id="assignSection" style="display:none">
       <div class="assign-title">🔓 Asignar Feriante</div>
@@ -1003,7 +1034,7 @@ let lastTap = 0;
 document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
 
 // ── VERSIÓN DE LA APP ────────────────────────────────────────────────────────
-const APP_VERSION = 'v2.0';   // ← cambiá solo acá
+const APP_VERSION = 'v3.0';   // ← cambiá solo acá
 document.addEventListener('DOMContentLoaded', () => {
   const lv = document.getElementById('loginVersion');
   const hv = document.getElementById('headerVersion');
@@ -1284,6 +1315,15 @@ function openModal(id) {
   document.getElementById('mainPanel').classList.remove('hidden');
   resetMobQty();
   updateMobSummary();
+
+  // Sección comentarios: solo perfil 1 (Vendedor) y 3 (Admin)
+  const comentariosSection = document.getElementById('comentariosSection');
+  if (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3) {
+    comentariosSection.style.display = 'block';
+    resetComentariosUI(extra.com || '');
+  } else {
+    comentariosSection.style.display = 'none';
+  }
 
   // Sección asignar feriante: solo para Disponibles Y VENDEDORES o ADMIN
   const assignSection = document.getElementById('assignSection');
@@ -2437,6 +2477,67 @@ async function venderMobAdicional() {
     msgEl.className = 'mob-adicional-msg err';
     btn.disabled = false;
     btn.textContent = 'Registrar venta de mobiliario';
+  }
+}
+
+// ── COMENTARIOS (acordeón, perfil 1 y 3) ─────────────────────────────────────
+let comentarioOriginal = '';
+
+function resetComentariosUI(texto) {
+  comentarioOriginal = texto || '';
+  document.getElementById('comentariosTexto').value = comentarioOriginal;
+  document.getElementById('comentariosBody').style.display = 'none';
+  document.getElementById('comentariosChevron').classList.remove('open');
+  document.getElementById('comentariosMsg').textContent = '';
+  document.getElementById('comentariosMsg').className = 'comentarios-msg';
+  document.getElementById('comentariosBadge').style.display = comentarioOriginal ? 'inline-block' : 'none';
+  checkComentariosBtn();
+}
+
+function toggleComentarios() {
+  const body    = document.getElementById('comentariosBody');
+  const chevron = document.getElementById('comentariosChevron');
+  const abrir   = body.style.display !== 'block';
+  body.style.display = abrir ? 'block' : 'none';
+  chevron.classList.toggle('open', abrir);
+}
+
+function checkComentariosBtn() {
+  const texto = document.getElementById('comentariosTexto').value;
+  document.getElementById('comentariosBtn').disabled = (texto.trim() === comentarioOriginal.trim());
+}
+
+async function guardarComentario() {
+  const btn   = document.getElementById('comentariosBtn');
+  const msgEl = document.getElementById('comentariosMsg');
+  const texto = document.getElementById('comentariosTexto').value.trim();
+  if (!currentStandId) return;
+
+  msgEl.textContent = '';
+  msgEl.className = 'comentarios-msg';
+  btn.disabled = true;
+
+  try {
+    const url  = `${API_URL}?tipo=comentario&stand=${encodeURIComponent(currentStandId)}&user=${encodeURIComponent(CURRENT_USER)}&texto=${encodeURIComponent(texto)}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    if (data.ok) {
+      comentarioOriginal = texto;
+      if (!FULL_DATA.extraData) FULL_DATA.extraData = {};
+      if (!FULL_DATA.extraData[currentStandId]) FULL_DATA.extraData[currentStandId] = {};
+      FULL_DATA.extraData[currentStandId].com = texto;
+      document.getElementById('comentariosBadge').style.display = texto ? 'inline-block' : 'none';
+      msgEl.textContent = '✅ Comentario guardado.';
+      msgEl.className = 'comentarios-msg ok';
+    } else {
+      msgEl.textContent = data.error || 'Error al guardar el comentario.';
+      msgEl.className = 'comentarios-msg err';
+      btn.disabled = false;
+    }
+  } catch(err) {
+    msgEl.textContent = 'Error de conexión.';
+    msgEl.className = 'comentarios-msg err';
+    btn.disabled = false;
   }
 }
 
