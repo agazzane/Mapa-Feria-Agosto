@@ -414,18 +414,21 @@
   .mob-readonly-items { display: flex; flex-wrap: wrap; gap: 6px; }
   .mob-readonly-chip { padding: 3px 10px; background: white; border: 1px solid var(--border); border-radius: 100px; font-size: 12px; font-weight: 500; color: var(--text); }
 
-  /* ── COMENTARIOS (acordeón) ── */
-  .comentarios-section { margin-top: 12px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
-  .comentarios-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg); cursor: pointer; user-select: none; }
-  .comentarios-header-left { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: var(--text2); }
-  .comentarios-badge { color: var(--accent); font-size: 14px; line-height: 1; }
-  .comentarios-chevron { font-size: 11px; color: var(--text3); transition: transform .15s; display: inline-block; }
-  .comentarios-chevron.open { transform: rotate(180deg); }
-  .comentarios-body { padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border); }
-  .comentarios-textarea { width: 100%; min-height: 64px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); color: var(--text); background: var(--bg); resize: vertical; }
-  .comentarios-btn { margin-top: 8px; width: 100%; padding: 9px; border: none; border-radius: var(--radius-sm); background: var(--accent); color: white; font-size: 13px; font-weight: 600; font-family: var(--font); cursor: pointer; }
+  /* ── COMENTARIOS (icono en sticky header + panel aparte) ── */
+  .comentarios-icon-btn {
+    position: relative; background: var(--bg); border: none; border-radius: var(--radius-sm);
+    width: 30px; height: 30px; font-size: 15px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .comentarios-icon-btn:active { background: #e5e5ea; }
+  .comentarios-icon-dot {
+    position: absolute; top: 3px; right: 3px; width: 7px; height: 7px;
+    border-radius: 50%; background: var(--accent);
+  }
+  .comentarios-textarea { width: 100%; min-height: 120px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font); color: var(--text); background: var(--bg); resize: vertical; }
+  .comentarios-btn { margin-top: 12px; width: 100%; padding: 10px; border: none; border-radius: var(--radius-sm); background: var(--accent); color: white; font-size: 14px; font-weight: 600; font-family: var(--font); cursor: pointer; }
   .comentarios-btn:disabled { opacity: .5; cursor: default; }
-  .comentarios-msg { margin-top: 6px; font-size: 12px; min-height: 14px; }
+  .comentarios-msg { margin-top: 8px; font-size: 12px; min-height: 14px; }
   .comentarios-msg.ok  { color: #1a7f3c; }
   .comentarios-msg.err { color: #b91c1c; }
   .mob-open-btn { width: 100%; margin-top: 10px; padding: 9px; background: var(--bg); color: var(--accent); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background .18s; }
@@ -770,6 +773,9 @@
       <span class="modal-sticky-num" id="modalStickyNum">Stand —</span>
       <div style="display:flex;align-items:center;gap:8px">
         <span class="modal-sticky-badge" id="modalStickyBadge" data-e=""></span>
+        <button class="comentarios-icon-btn" id="comentariosIconBtn" onclick="openComentariosPanel()" style="display:none" title="Comentarios">
+          📝<span class="comentarios-icon-dot" id="comentariosIconDot" style="display:none"></span>
+        </button>
         <button class="modal-close" style="position:static;float:none;margin:0" onclick="closeModal()">×</button>
       </div>
     </div>
@@ -927,21 +933,16 @@
     </div>
 
     <!-- COMENTARIOS (texto libre, solo perfil 1 y 3, no en Disponible) -->
-    <div class="comentarios-section" id="comentariosSection" style="display:none">
-      <div class="comentarios-header" onclick="toggleComentarios()">
-        <div class="comentarios-header-left">
-          <span>📝 Comentarios</span>
-          <span class="comentarios-badge" id="comentariosBadge" style="display:none">●</span>
-        </div>
-        <span class="comentarios-chevron" id="comentariosChevron">▾</span>
-      </div>
-      <div class="comentarios-body" id="comentariosBody" style="display:none">
-        <textarea class="comentarios-textarea" id="comentariosTexto" placeholder="Escribí un comentario para este stand..." maxlength="500" oninput="checkComentariosBtn()"></textarea>
-        <button class="comentarios-btn" id="comentariosBtn" onclick="guardarComentario()" disabled>Guardar comentario</button>
-        <div class="comentarios-msg" id="comentariosMsg"></div>
-      </div>
-    </div>
     </div><!-- /.main-panel -->
+    <div class="mob-panel" id="comentariosPanel">
+      <div class="mob-header">
+        <button class="mob-back" onclick="closeComentariosPanel()">← Volver</button>
+        <div class="mob-title">📝 Comentarios</div>
+      </div>
+      <textarea class="comentarios-textarea" id="comentariosTexto" placeholder="Escribí un comentario para este stand..." maxlength="500" oninput="checkComentariosBtn()"></textarea>
+      <button class="comentarios-btn" id="comentariosBtn" onclick="guardarComentario()" disabled>Guardar comentario</button>
+      <div class="comentarios-msg" id="comentariosMsg"></div>
+    </div>
 
     <!-- Panel de mobiliario (reemplaza al main-panel al abrirse) -->
     <div class="mob-panel" id="mobPanel">
@@ -1312,17 +1313,18 @@ function openModal(id) {
     setTimeout(() => pulse.remove(), 1200);
   })();
   document.getElementById('mobPanel').classList.remove('active');
+  document.getElementById('comentariosPanel').classList.remove('active');
   document.getElementById('mainPanel').classList.remove('hidden');
   resetMobQty();
   updateMobSummary();
 
-  // Sección comentarios: solo perfil 1 (Vendedor) y 3 (Admin), y nunca en Disponible
-  const comentariosSection = document.getElementById('comentariosSection');
+  // Ícono de comentarios en el header: solo perfil 1 (Vendedor) y 3 (Admin)
+  const comentariosIconBtn = document.getElementById('comentariosIconBtn');
   if (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3) {
-    comentariosSection.style.display = 'block';
+    comentariosIconBtn.style.display = 'flex';
     resetComentariosUI(extra.com || '');
   } else {
-    comentariosSection.style.display = 'none';
+    comentariosIconBtn.style.display = 'none';
   }
 
   // Sección asignar feriante: solo para Disponibles Y VENDEDORES o ADMIN
@@ -2480,26 +2482,28 @@ async function venderMobAdicional() {
   }
 }
 
-// ── COMENTARIOS (acordeón, perfil 1 y 3) ─────────────────────────────────────
+// ── COMENTARIOS (ícono en header + panel aparte, perfil 1 y 3) ──────────────
 let comentarioOriginal = '';
 
 function resetComentariosUI(texto) {
   comentarioOriginal = texto || '';
   document.getElementById('comentariosTexto').value = comentarioOriginal;
-  document.getElementById('comentariosBody').style.display = 'none';
-  document.getElementById('comentariosChevron').classList.remove('open');
   document.getElementById('comentariosMsg').textContent = '';
   document.getElementById('comentariosMsg').className = 'comentarios-msg';
-  document.getElementById('comentariosBadge').style.display = comentarioOriginal ? 'inline-block' : 'none';
+  document.getElementById('comentariosIconDot').style.display = comentarioOriginal ? 'block' : 'none';
   checkComentariosBtn();
 }
 
-function toggleComentarios() {
-  const body    = document.getElementById('comentariosBody');
-  const chevron = document.getElementById('comentariosChevron');
-  const abrir   = body.style.display !== 'block';
-  body.style.display = abrir ? 'block' : 'none';
-  chevron.classList.toggle('open', abrir);
+function openComentariosPanel() {
+  document.getElementById('mainPanel').classList.add('hidden');
+  document.getElementById('mobPanel').classList.remove('active');
+  document.getElementById('altaPanel').classList.remove('active');
+  document.getElementById('comentariosPanel').classList.add('active');
+}
+
+function closeComentariosPanel() {
+  document.getElementById('comentariosPanel').classList.remove('active');
+  document.getElementById('mainPanel').classList.remove('hidden');
 }
 
 function checkComentariosBtn() {
@@ -2526,7 +2530,7 @@ async function guardarComentario() {
       if (!FULL_DATA.extraData) FULL_DATA.extraData = {};
       if (!FULL_DATA.extraData[currentStandId]) FULL_DATA.extraData[currentStandId] = {};
       FULL_DATA.extraData[currentStandId].com = texto;
-      document.getElementById('comentariosBadge').style.display = texto ? 'inline-block' : 'none';
+      document.getElementById('comentariosIconDot').style.display = texto ? 'block' : 'none';
       msgEl.textContent = '✅ Comentario guardado.';
       msgEl.className = 'comentarios-msg ok';
     } else {
