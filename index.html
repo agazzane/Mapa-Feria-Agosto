@@ -1574,14 +1574,20 @@ function closeModal(e) {
 }
 
 const ZOOM_STEPS = [0.4, 0.5, 0.6, 0.75, 0.9, 1.1, 1.3];
+const ZOOM_MIN = ZOOM_STEPS[0];
+const ZOOM_MAX = ZOOM_STEPS[ZOOM_STEPS.length - 1];
 let zoomIdx = 2;
+let liveScale = null; // escala continua durante el pinch (más fluida que los steps fijos)
+
+function getScale() { return liveScale !== null ? liveScale : ZOOM_STEPS[zoomIdx]; }
+
 function aplicarZoom() {
-  const scale = ZOOM_STEPS[zoomIdx];
+  const scale = getScale();
   document.querySelectorAll('.map-inner').forEach(inner => { inner.style.transform=`scale(${scale})`; });
   document.getElementById('zoomLabel').textContent = Math.round(scale*100)+'%';
   fixMapSize(); centerMap();
 }
-function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoomIdx+dir)); aplicarZoom(); }
+function cambiarZoom(dir) { liveScale = null; zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoomIdx+dir)); aplicarZoom(); }
 
 // ── PINCH-TO-ZOOM (mobile) + CTRL+SCROLL (desktop) ───────────────────────────
 (function() {
@@ -1612,6 +1618,10 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       e.preventDefault();
       pinchStartDist = getPinchDist(e.touches);
       pinchStartIdx  = zoomIdx;
+      liveScale = ZOOM_STEPS[zoomIdx]; // arranca en la escala actual, luego se mueve continuo
+
+      // Sin transición durante el pinch: si no, la animación "compite" con los dedos y se siente robótico
+      document.querySelectorAll('.map-inner').forEach(inner => { inner.style.transition = 'none'; });
 
       // Guardamos el punto donde se "pellizcó" (en coordenadas sin escala del mapa)
       const mid = getMid(e.touches);
@@ -1619,10 +1629,9 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       pinchContainer = el && el.closest('.map-scroll');
       const inner = pinchContainer && pinchContainer.querySelector('.map-inner');
       if (inner) {
-        const rect  = inner.getBoundingClientRect();
-        const scale = ZOOM_STEPS[pinchStartIdx];
-        anchorLocalX = (mid.x - rect.left) / scale;
-        anchorLocalY = (mid.y - rect.top) / scale;
+        const rect = inner.getBoundingClientRect();
+        anchorLocalX = (mid.x - rect.left) / liveScale;
+        anchorLocalY = (mid.y - rect.top) / liveScale;
       } else {
         pinchContainer = null;
       }
@@ -1635,31 +1644,20 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       e.preventDefault();
       const dist  = getPinchDist(e.touches);
       const ratio = dist / pinchStartDist;
-      // Calcular cuántos steps mover según el ratio
-      const targetScale = ZOOM_STEPS[pinchStartIdx] * ratio;
-      // Encontrar el step más cercano al targetScale
-      let bestIdx = 0;
-      let bestDiff = Infinity;
-      ZOOM_STEPS.forEach((s, i) => {
-        const diff = Math.abs(s - targetScale);
-        if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
-      });
-      if (bestIdx !== zoomIdx) {
-        zoomIdx = bestIdx;
-        aplicarZoom();
+      // Escala continua (sin encajar en steps) para que el pinch se sienta natural
+      liveScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, ZOOM_STEPS[pinchStartIdx] * ratio));
+      aplicarZoom();
 
-        // Reacomodar el scroll para que el punto pellizcado quede fijo bajo los dedos
-        if (pinchContainer) {
-          const inner = pinchContainer.querySelector('.map-inner');
-          if (inner) {
-            const newScale = ZOOM_STEPS[zoomIdx];
-            const mid  = getMid(e.touches);
-            const rect = inner.getBoundingClientRect();
-            const currentScreenX = rect.left + anchorLocalX * newScale;
-            const currentScreenY = rect.top  + anchorLocalY * newScale;
-            pinchContainer.scrollLeft += (currentScreenX - mid.x);
-            pinchContainer.scrollTop  += (currentScreenY - mid.y);
-          }
+      // Reacomodar el scroll para que el punto pellizcado quede fijo bajo los dedos
+      if (pinchContainer) {
+        const inner = pinchContainer.querySelector('.map-inner');
+        if (inner) {
+          const mid  = getMid(e.touches);
+          const rect = inner.getBoundingClientRect();
+          const currentScreenX = rect.left + anchorLocalX * liveScale;
+          const currentScreenY = rect.top  + anchorLocalY * liveScale;
+          pinchContainer.scrollLeft += (currentScreenX - mid.x);
+          pinchContainer.scrollTop  += (currentScreenY - mid.y);
         }
       }
     }
@@ -1670,6 +1668,20 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       pinchStartDist = null;
       pinchStartIdx  = null;
       pinchContainer = null;
+
+      if (liveScale !== null) {
+        // Al soltar los dedos, encajamos en el step más cercano (para que quede consistente con los botones +/−)
+        let bestIdx = 0, bestDiff = Infinity;
+        ZOOM_STEPS.forEach((s, i) => {
+          const diff = Math.abs(s - liveScale);
+          if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+        });
+        zoomIdx = bestIdx;
+        liveScale = null;
+        // Restauramos la transición suave para el "snap" final y para los botones +/−
+        document.querySelectorAll('.map-inner').forEach(inner => { inner.style.transition = ''; });
+        aplicarZoom();
+      }
     }
   });
 
@@ -1681,7 +1693,7 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
   }, { passive: false });
 })();
 function fixMapSize() {
-  const scale = ZOOM_STEPS[zoomIdx];
+  const scale = getScale();
   document.querySelectorAll('.map-inner').forEach(inner => {
     const bg=inner.querySelector('.map-bg');
     const w=Math.max(inner.scrollWidth, bg?parseInt(bg.getAttribute('width')):0);
@@ -1690,7 +1702,7 @@ function fixMapSize() {
   });
 }
 function centerMap() {
-  const scale = ZOOM_STEPS[zoomIdx];
+  const scale = getScale();
   document.querySelectorAll('.map-scroll').forEach(container => {
     const inner=container.querySelector('.map-inner'); if(!inner) return;
     const cw=inner.scrollWidth*scale;
