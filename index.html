@@ -797,22 +797,6 @@
       </div>
     </div>
 
-    <!-- COMENTARIOS (texto libre, solo perfil 1 y 3) -->
-    <div class="comentarios-section" id="comentariosSection" style="display:none">
-      <div class="comentarios-header" onclick="toggleComentarios()">
-        <div class="comentarios-header-left">
-          <span>📝 Comentarios</span>
-          <span class="comentarios-badge" id="comentariosBadge" style="display:none">●</span>
-        </div>
-        <span class="comentarios-chevron" id="comentariosChevron">▾</span>
-      </div>
-      <div class="comentarios-body" id="comentariosBody" style="display:none">
-        <textarea class="comentarios-textarea" id="comentariosTexto" placeholder="Escribí un comentario para este stand..." maxlength="500" oninput="checkComentariosBtn()"></textarea>
-        <button class="comentarios-btn" id="comentariosBtn" onclick="guardarComentario()" disabled>Guardar comentario</button>
-        <div class="comentarios-msg" id="comentariosMsg"></div>
-      </div>
-    </div>
-
     <!-- ASIGNAR FERIANTE (solo cuando el stand está Disponible) -->
     <div class="assign-section" id="assignSection" style="display:none">
       <div class="assign-title">🔓 Asignar Feriante</div>
@@ -939,6 +923,22 @@
         </div>
         <button class="pago-btn" id="pagoBtn" onclick="cargarPago()">Registrar pago</button>
         <div class="pago-msg" id="pagoMsg"></div>
+      </div>
+    </div>
+
+    <!-- COMENTARIOS (texto libre, solo perfil 1 y 3, no en Disponible) -->
+    <div class="comentarios-section" id="comentariosSection" style="display:none">
+      <div class="comentarios-header" onclick="toggleComentarios()">
+        <div class="comentarios-header-left">
+          <span>📝 Comentarios</span>
+          <span class="comentarios-badge" id="comentariosBadge" style="display:none">●</span>
+        </div>
+        <span class="comentarios-chevron" id="comentariosChevron">▾</span>
+      </div>
+      <div class="comentarios-body" id="comentariosBody" style="display:none">
+        <textarea class="comentarios-textarea" id="comentariosTexto" placeholder="Escribí un comentario para este stand..." maxlength="500" oninput="checkComentariosBtn()"></textarea>
+        <button class="comentarios-btn" id="comentariosBtn" onclick="guardarComentario()" disabled>Guardar comentario</button>
+        <div class="comentarios-msg" id="comentariosMsg"></div>
       </div>
     </div>
     </div><!-- /.main-panel -->
@@ -1316,9 +1316,9 @@ function openModal(id) {
   resetMobQty();
   updateMobSummary();
 
-  // Sección comentarios: solo perfil 1 (Vendedor) y 3 (Admin)
+  // Sección comentarios: solo perfil 1 (Vendedor) y 3 (Admin), y nunca en Disponible
   const comentariosSection = document.getElementById('comentariosSection');
-  if (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3) {
+  if (estado !== 'Disponible' && (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3)) {
     comentariosSection.style.display = 'block';
     resetComentariosUI(extra.com || '');
   } else {
