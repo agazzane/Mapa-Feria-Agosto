@@ -1003,7 +1003,7 @@ let lastTap = 0;
 document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
 
 // ── VERSIÓN DE LA APP ────────────────────────────────────────────────────────
-const APP_VERSION = 'v1.0';   // ← cambiá solo acá
+const APP_VERSION = 'v2.0';   // ← cambiá solo acá
 document.addEventListener('DOMContentLoaded', () => {
   const lv = document.getElementById('loginVersion');
   const hv = document.getElementById('headerVersion');
@@ -1587,11 +1587,17 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
 (function() {
   let pinchStartDist = null;
   let pinchStartIdx  = null;
+  let pinchContainer = null;
+  let anchorLocalX = 0, anchorLocalY = 0;
 
   function getPinchDist(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
     const dy = touches[0].clientY - touches[1].clientY;
     return Math.sqrt(dx*dx + dy*dy);
+  }
+
+  function getMid(touches) {
+    return { x: (touches[0].clientX + touches[1].clientX) / 2, y: (touches[0].clientY + touches[1].clientY) / 2 };
   }
 
   // Detectar si el toque ocurre dentro del modal (para no interferir)
@@ -1606,6 +1612,20 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       e.preventDefault();
       pinchStartDist = getPinchDist(e.touches);
       pinchStartIdx  = zoomIdx;
+
+      // Guardamos el punto donde se "pellizcó" (en coordenadas sin escala del mapa)
+      const mid = getMid(e.touches);
+      const el  = document.elementFromPoint(mid.x, mid.y);
+      pinchContainer = el && el.closest('.map-scroll');
+      const inner = pinchContainer && pinchContainer.querySelector('.map-inner');
+      if (inner) {
+        const rect  = inner.getBoundingClientRect();
+        const scale = ZOOM_STEPS[pinchStartIdx];
+        anchorLocalX = (mid.x - rect.left) / scale;
+        anchorLocalY = (mid.y - rect.top) / scale;
+      } else {
+        pinchContainer = null;
+      }
     }
   }, { passive: false });
 
@@ -1627,6 +1647,20 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
       if (bestIdx !== zoomIdx) {
         zoomIdx = bestIdx;
         aplicarZoom();
+
+        // Reacomodar el scroll para que el punto pellizcado quede fijo bajo los dedos
+        if (pinchContainer) {
+          const inner = pinchContainer.querySelector('.map-inner');
+          if (inner) {
+            const newScale = ZOOM_STEPS[zoomIdx];
+            const mid  = getMid(e.touches);
+            const rect = inner.getBoundingClientRect();
+            const currentScreenX = rect.left + anchorLocalX * newScale;
+            const currentScreenY = rect.top  + anchorLocalY * newScale;
+            pinchContainer.scrollLeft += (currentScreenX - mid.x);
+            pinchContainer.scrollTop  += (currentScreenY - mid.y);
+          }
+        }
       }
     }
   }, { passive: false });
@@ -1635,6 +1669,7 @@ function cambiarZoom(dir) { zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoom
     if (e.touches.length < 2) {
       pinchStartDist = null;
       pinchStartIdx  = null;
+      pinchContainer = null;
     }
   });
 
