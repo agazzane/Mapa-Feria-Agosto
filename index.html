@@ -1318,7 +1318,7 @@ function openModal(id) {
 
   // Sección comentarios: solo perfil 1 (Vendedor) y 3 (Admin), y nunca en Disponible
   const comentariosSection = document.getElementById('comentariosSection');
-  if (estado !== 'Disponible' && (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3)) {
+  if (CURRENT_PERFIL === 1 || CURRENT_PERFIL === 3) {
     comentariosSection.style.display = 'block';
     resetComentariosUI(extra.com || '');
   } else {
