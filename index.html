@@ -1053,7 +1053,7 @@ let lastTap = 0;
 document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
 
 // ── VERSIÓN DE LA APP ────────────────────────────────────────────────────────
-const APP_VERSION = 'v4.1';   // ← cambiá solo acá
+const APP_VERSION = 'v4.2';   // ← cambiá solo acá
 document.addEventListener('DOMContentLoaded', () => {
   const lv = document.getElementById('loginVersion');
   const hv = document.getElementById('headerVersion');
@@ -1678,6 +1678,14 @@ function aplicarZoom() {
   document.getElementById('zoomLabel').textContent = Math.round(scale*100)+'%';
   fixMapSize(); centerMap();
 }
+// Versión liviana para usar DURANTE el pinch: solo toca transform (GPU, sin reflow).
+// fixMapSize()/centerMap() recalculan width/height/margin — eso es "layout", caro si se hace
+// en cada touchmove. Por eso se difieren hasta que el gesto termina (ver touchend del pinch).
+function aplicarZoomLive() {
+  const scale = getScale();
+  document.querySelectorAll('.map-inner').forEach(inner => { inner.style.transform=`scale(${scale})`; });
+  document.getElementById('zoomLabel').textContent = Math.round(scale*100)+'%';
+}
 function cambiarZoom(dir) { liveScale = null; zoomIdx=Math.max(0,Math.min(ZOOM_STEPS.length-1,zoomIdx+dir)); aplicarZoom(); }
 
 // ── PINCH-TO-ZOOM (mobile) + CTRL+SCROLL (desktop) ───────────────────────────
@@ -1737,7 +1745,7 @@ function cambiarZoom(dir) { liveScale = null; zoomIdx=Math.max(0,Math.min(ZOOM_S
       const ratio = dist / pinchStartDist;
       // Escala continua (sin encajar en steps) para que el pinch se sienta natural
       liveScale = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, ZOOM_STEPS[pinchStartIdx] * ratio));
-      aplicarZoom();
+      aplicarZoomLive();
 
       // Reacomodar el scroll para que el punto pellizcado quede fijo bajo los dedos
       if (pinchContainer) {
