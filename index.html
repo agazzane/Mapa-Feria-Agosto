@@ -110,8 +110,8 @@
   .occ-bar-seg#occSegSenado { background: #ffd60a; }
   .occ-bar-seg#occSegDisp   { background: #e5e5ea; }
   .occ-bar-legend { display: flex; justify-content: space-between; margin-top: 6px; }
-  .occ-bar-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: rgba(255,255,255,.45); font-weight: 500; }
-  .occ-bar-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .occ-bar-item { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: rgba(255,255,255,.65); font-weight: 600; }
+  .occ-bar-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 
   /* ── STATS (oculto) ── */
   .stats { display: none; }
@@ -165,8 +165,9 @@
   .search-wrap input::placeholder { color: var(--text3); }
 
   /* ── MAP ── */
-  .floor { display: none; }
-  .floor.active { display: block; }
+  .floor { display: none; opacity: 0; }
+  .floor.active { display: block; opacity: 1; animation: floorFade .22s ease; }
+  @keyframes floorFade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
   .map-scroll { overflow: auto; padding: 6px; -webkit-overflow-scrolling: touch; }
   .map-inner { transform-origin: top left; width: max-content; transition: transform 0.15s ease; position: relative; }
   .map-bg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 0; }
@@ -175,7 +176,7 @@
   /* ── STANDS ── */
   .stand {
     border-radius: 10px; padding: 3px 3px 2px; cursor: pointer;
-    transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s;
+    transition: transform .15s cubic-bezier(.34,1.56,.64,1), box-shadow .15s, opacity .22s ease;
     border: 1.5px solid transparent;
     width: 136px; height: 62px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -371,7 +372,7 @@
   .assign-selected-pill button { background: none; border: none; font-size: 18px; color: #7c3aed; cursor: pointer; padding: 0; line-height: 1; }
   .assign-btn { width: 100%; padding: 10px; background: #7c3aed; color: white; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background .18s; }
   .assign-btn:active { background: #6d28d9; }
-  .assign-btn:disabled { background: #c4b5fd; cursor: not-allowed; }
+  .assign-btn:disabled { background: #c4b5fd; color: #4c1d95; cursor: not-allowed; }
   .assign-msg { font-size: 12px; font-weight: 600; text-align: center; margin-top: 8px; min-height: 16px; }
   .assign-msg.ok  { color: #15803d; }
   .assign-msg.err { color: #ff3b30; }
@@ -455,7 +456,7 @@
   .mob-adicional-total { font-size: 14px; font-weight: 700; color: #15803d; margin-top: 6px; }
   .mob-adicional-btn { width: 100%; padding: 10px; background: #15803d; color: white; border: none; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; font-family: var(--font); cursor: pointer; transition: background .18s; margin-top: 4px; }
   .mob-adicional-btn:active { background: #166534; }
-  .mob-adicional-btn:disabled { background: #86efac; cursor: not-allowed; }
+  .mob-adicional-btn:disabled { background: #86efac; color: #14532d; cursor: not-allowed; }
   .mob-adicional-msg { font-size: 12px; font-weight: 600; text-align: center; margin-top: 8px; min-height: 16px; }
   .mob-adicional-msg.ok  { color: #15803d; }
   .mob-adicional-msg.err { color: #ff3b30; }
@@ -465,8 +466,10 @@
     display: none; position: fixed; inset: 0; z-index: 500;
     background: rgba(0,0,0,.45); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
     align-items: center; justify-content: center; flex-direction: column; gap: 14px;
+    opacity: 0; transition: opacity .18s ease;
   }
   #loadingOverlay.visible { display: flex; }
+  #loadingOverlay.visible.shown { opacity: 1; }
   .loading-card {
     background: #fff; border-radius: 18px; padding: 24px 32px;
     display: flex; flex-direction: column; align-items: center; gap: 14px;
@@ -483,6 +486,14 @@
   .loading-text { font-size: 14px; font-weight: 600; color: var(--text2); text-align: center; }
   .loading-bar-wrap { width: 140px; height: 4px; background: #e5e5ea; border-radius: 2px; overflow: hidden; }
   .loading-bar { height: 100%; width: 0%; background: var(--accent); border-radius: 2px; transition: width .4s ease; }
+
+  /* ── SPINNER INLINE (estado "guardando" dentro de un botón) ── */
+  .btn-spinner {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentColor; border-right-color: transparent;
+    opacity: .85; display: inline-block; vertical-align: -2.5px; margin-right: 7px;
+    animation: spin .6s linear infinite;
+  }
 
   /* ── MODAL sticky header ── */
   .modal-sticky-header {
@@ -1053,7 +1064,7 @@ let lastTap = 0;
 document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
 
 // ── VERSIÓN DE LA APP ────────────────────────────────────────────────────────
-const APP_VERSION = 'v4.2';   // ← cambiá solo acá
+const APP_VERSION = 'v4.5';   // ← cambiá solo acá
 document.addEventListener('DOMContentLoaded', () => {
   const lv = document.getElementById('loginVersion');
   const hv = document.getElementById('headerVersion');
@@ -1234,7 +1245,9 @@ function switchFloor(f, btn) {
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   applyFilters();
-  setTimeout(()=>{ aplicarZoom(); }, 50);
+  // Esperamos al próximo repintado real (en vez de un setTimeout con tiempo fijo)
+  // para que el piso ya esté visible y con su layout final antes de reaplicar el zoom.
+  requestAnimationFrame(() => requestAnimationFrame(() => { aplicarZoom(); }));
 }
 
 function setFilter(f, btn) {
@@ -1561,8 +1574,7 @@ async function asignarFeriante() {
   }
   if (!currentStandId) return;
 
-  btn.disabled = true;
-  showLoading('Guardando...');
+  setBtnBusy(btn, 'Guardando...');
 
   try {
     // Paso 1: asignar feriante (+ mobiliario)
@@ -1576,9 +1588,7 @@ async function asignarFeriante() {
     if (!dataAsignar.ok) {
       msgEl.textContent = dataAsignar.error || 'Error al asignar el feriante.';
       msgEl.className = 'assign-msg err';
-      btn.disabled = false;
-      btn.textContent = 'Asignar y señar';
-      hideLoading();
+      clearBtnBusy(btn, 'Asignar y señar');
       return;
     }
 
@@ -1590,16 +1600,17 @@ async function asignarFeriante() {
     if (!dataPago.ok) {
       msgEl.textContent = `Feriante asignado pero error al registrar la seña: ${dataPago.error || ''}`;
       msgEl.className = 'assign-msg err';
-      btn.disabled = false;
-      btn.textContent = 'Asignar y señar';
-      hideLoading();
+      clearBtnBusy(btn, 'Asignar y señar');
       return;
     }
 
-    // Todo OK: recargar mapa y cerrar
+    // Todo OK: recargar mapa y cerrar. Acá sí vale la pena el overlay completo,
+    // porque se está recargando el mapa entero y cerrando el modal.
     msgEl.textContent = `✅ ${feriante} asignado y seña de $${monto.toLocaleString('es-AR')} registrada. Actualizando mapa...`;
     msgEl.className = 'assign-msg ok';
+    setBtnBusy(btn, 'Actualizando mapa...');
     modalLocked = true;
+    showLoading('Actualizando mapa...');
     await load();
     document.getElementById('modalOverlay').classList.remove('open');
     unlockModal();
@@ -1607,22 +1618,33 @@ async function asignarFeriante() {
   } catch(err) {
     msgEl.textContent = 'Error de conexión.';
     msgEl.className = 'assign-msg err';
-    hideLoading();
+    clearBtnBusy(btn, 'Asignar y señar');
   }
 
-  btn.disabled = false;
-  btn.textContent = 'Asignar y señar';
+  clearBtnBusy(btn, 'Asignar y señar');
 }
 
 let modalLocked = false;
 
 // ── LOADING OVERLAY ──────────────────────────────────────────────────────────
 let _loadingInterval = null;
+let _loadingShownAt = 0;
+const LOADING_MIN_MS = 380; // tiempo mínimo visible: evita que "titile" si la respuesta es instantánea
+
 function showLoading(text = 'Guardando...') {
   document.getElementById('loadingText').textContent = text;
   const bar = document.getElementById('loadingBar');
+  const overlay = document.getElementById('loadingOverlay');
+  bar.style.transition = 'none';
   bar.style.width = '0%';
-  document.getElementById('loadingOverlay').classList.add('visible');
+  overlay.classList.add('visible');
+  _loadingShownAt = Date.now();
+  // Un frame después activamos el fade-in (si lo hacemos en el mismo frame que
+  // .visible, el navegador puede saltarse la transición de opacity)
+  requestAnimationFrame(() => {
+    bar.style.transition = '';
+    overlay.classList.add('shown');
+  });
   // Progreso animado (no determinista): llega al 85% y se detiene
   let pct = 0;
   clearInterval(_loadingInterval);
@@ -1635,16 +1657,40 @@ function showLoading(text = 'Guardando...') {
 function hideLoading() {
   clearInterval(_loadingInterval);
   const bar = document.getElementById('loadingBar');
-  bar.style.width = '100%';
+  const overlay = document.getElementById('loadingOverlay');
+  const elapsed = Date.now() - _loadingShownAt;
+  const wait = Math.max(0, LOADING_MIN_MS - elapsed);
   setTimeout(() => {
-    document.getElementById('loadingOverlay').classList.remove('visible');
-    bar.style.width = '0%';
-  }, 320);
+    bar.style.width = '100%';
+    setTimeout(() => {
+      overlay.classList.remove('shown'); // dispara el fade-out (opacity, .18s)
+      setTimeout(() => {
+        overlay.classList.remove('visible');
+        bar.style.width = '0%';
+      }, 200);
+    }, 220);
+  }, wait);
 }
 
-function lockModal() {
+// Estado "ocupado" inline en un botón (spinner + texto), para acciones rápidas
+// que no ameritan tapar toda la pantalla con el overlay.
+function setBtnBusy(btn, text) {
+  if (!btn) return;
+  if (btn.dataset.origHtml === undefined) btn.dataset.origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="btn-spinner"></span>${text}`;
+}
+function clearBtnBusy(btn, text) {
+  if (!btn) return;
+  btn.disabled = false;
+  if (text !== undefined) btn.textContent = text;
+  else if (btn.dataset.origHtml !== undefined) btn.innerHTML = btn.dataset.origHtml;
+  delete btn.dataset.origHtml;
+}
+
+function lockModal(text = 'Actualizando mapa...') {
   modalLocked = true;
-  showLoading('Guardando...');
+  showLoading(text);
 }
 
 function unlockModal() {
@@ -2116,8 +2162,7 @@ async function cargarPago() {
   }
 
   if (!currentStandId)      return;
-  btn.disabled    = true;
-  showLoading('Guardando...');
+  setBtnBusy(btn, 'Guardando...');
   try {
     const vendedorParam = vendedor ? `&vendedor=${encodeURIComponent(vendedor)}` : '';
     const url  = `${API_URL}?tipo=pago&stand=${encodeURIComponent(currentStandId)}&num=${pagoNumActual}&monto=${monto}&medio=${encodeURIComponent(medio)}&user=${encodeURIComponent(CURRENT_USER)}${vendedorParam}`;
@@ -2139,29 +2184,34 @@ async function cargarPago() {
       document.getElementById('modalDebeBox').className = 'money-box ' + (ex.d > 0 ? 'debe-mal' : 'debe-ok');
 
       if (ex.d === 0) {
-        // Deuda saldada: bloquear modal, recargar mapa y recién cerrar
+        // Deuda saldada: bloquear modal, recargar mapa y recién cerrar.
+        // Acá sí conviene el overlay completo (se recarga el mapa entero).
         msgEl.textContent = `✅ Pago ${pagoNumActual} registrado. Stand Pagado. Actualizando mapa...`;
         msgEl.className   = 'pago-msg ok';
-        lockModal();
+        setBtnBusy(btn, 'Actualizando mapa...');
+        lockModal('Actualizando mapa...');
         await load();
         document.getElementById('modalOverlay').classList.remove('open');
         unlockModal();
       } else {
         // Aún debe: actualizar la UI del modal normalmente
-        hideLoading();
+        clearBtnBusy(btn, 'Registrar pago');
         msgEl.textContent = `✅ Pago ${pagoNumActual} registrado correctamente.`;
         msgEl.className   = 'pago-msg ok';
         setTimeout(() => { renderPagos(ex); }, 1200);
+        return;
       }
     } else {
-      hideLoading();
+      clearBtnBusy(btn, 'Registrar pago');
       msgEl.textContent = data.error || 'Error al guardar el pago.';
       msgEl.className   = 'pago-msg err';
+      return;
     }
   } catch(err) {
-    hideLoading();
+    clearBtnBusy(btn, 'Registrar pago');
     msgEl.textContent = 'Error de conexión.';
     msgEl.className   = 'pago-msg err';
+    return;
   }
   btn.disabled    = false;
   btn.textContent = 'Registrar pago';
@@ -2515,8 +2565,7 @@ async function venderMobAdicional() {
   if (!medio)             { msgEl.textContent = 'Seleccioná un medio de pago.'; msgEl.className = 'mob-adicional-msg err'; return; }
   if (!currentStandId)    return;
 
-  btn.disabled = true;
-  showLoading('Guardando...');
+  setBtnBusy(btn, 'Guardando...');
 
   // Armar descripción del mob para la leyenda
   const mobDesc = items.map(m => `${mobAdicionalQty[m.key]}×${m.label}`).join(' + ');
@@ -2529,23 +2578,21 @@ async function venderMobAdicional() {
     if (data.ok) {
       msgEl.textContent = `✅ Mobiliario adicional registrado. Actualizando...`;
       msgEl.className = 'mob-adicional-msg ok';
-      modalLocked = true;
+      // Acá sí conviene el overlay completo: se recarga el mapa entero y se cierra el modal.
+      setBtnBusy(btn, 'Actualizando mapa...');
+      lockModal('Actualizando mapa...');
       await load();
       document.getElementById('modalOverlay').classList.remove('open');
       unlockModal();
     } else {
-      hideLoading();
+      clearBtnBusy(btn, 'Registrar venta de mobiliario');
       msgEl.textContent = data.error || 'Error al registrar el mobiliario adicional.';
       msgEl.className = 'mob-adicional-msg err';
-      btn.disabled = false;
-      btn.textContent = 'Registrar venta de mobiliario';
     }
   } catch(err) {
-    hideLoading();
+    clearBtnBusy(btn, 'Registrar venta de mobiliario');
     msgEl.textContent = 'Error de conexión.';
     msgEl.className = 'mob-adicional-msg err';
-    btn.disabled = false;
-    btn.textContent = 'Registrar venta de mobiliario';
   }
 }
 
@@ -2586,7 +2633,7 @@ async function guardarComentario() {
 
   msgEl.textContent = '';
   msgEl.className = 'comentarios-msg';
-  btn.disabled = true;
+  setBtnBusy(btn, 'Guardando...');
 
   try {
     const url  = `${API_URL}?tipo=comentario&stand=${encodeURIComponent(currentStandId)}&user=${encodeURIComponent(CURRENT_USER)}&texto=${encodeURIComponent(texto)}`;
@@ -2598,17 +2645,19 @@ async function guardarComentario() {
       if (!FULL_DATA.extraData[currentStandId]) FULL_DATA.extraData[currentStandId] = {};
       FULL_DATA.extraData[currentStandId].com = texto;
       document.getElementById('comentariosIconDot').style.display = texto ? 'block' : 'none';
+      clearBtnBusy(btn, 'Guardar comentario');
+      btn.disabled = true; // el texto ya coincide con lo guardado, no hay nada nuevo que guardar
       msgEl.textContent = '✅ Comentario guardado.';
       msgEl.className = 'comentarios-msg ok';
     } else {
+      clearBtnBusy(btn, 'Guardar comentario');
       msgEl.textContent = data.error || 'Error al guardar el comentario.';
       msgEl.className = 'comentarios-msg err';
-      btn.disabled = false;
     }
   } catch(err) {
+    clearBtnBusy(btn, 'Guardar comentario');
     msgEl.textContent = 'Error de conexión.';
     msgEl.className = 'comentarios-msg err';
-    btn.disabled = false;
   }
 }
 
