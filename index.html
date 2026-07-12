@@ -267,7 +267,9 @@
   .modal-badge[data-e="Disponible"] { background: #eeeeff; color: #3730a3; border: 1.5px solid #5e5ce6; }
   .modal-badge[data-e="Excedido"]   { background: #ffe4d5; color: #3d1500; }
   .modal h2     { font-size: 28px; font-weight: 700; letter-spacing: -.5px; color: var(--text); }
-  .modal-nombre { font-size: 17px; font-weight: 600; color: var(--text); margin-top: 6px; }
+  .modal-nombre-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .modal-nombre { font-size: 17px; font-weight: 600; color: var(--text); }
+  .modal-nuevo-badge { background: #d1f5de; color: #0a3d1f; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; letter-spacing: .3px; }
   .modal-rubro  { font-size: 14px; color: var(--text3); margin-top: 3px; }
   .modal-zona   { font-size: 11px; color: var(--text3); margin-top: 3px; }
   .modal-tel {
@@ -806,7 +808,10 @@
 
     <!-- Panel principal -->
     <div class="main-panel" id="mainPanel">
-    <div class="modal-nombre" id="modalNombre"></div>
+    <div class="modal-nombre-row">
+      <span class="modal-nombre" id="modalNombre"></span>
+      <span class="modal-nuevo-badge" id="modalNuevoBadge" style="display:none">NUEVO</span>
+    </div>
     <div class="modal-rubro"  id="modalRubro"></div>
     <div class="modal-zona"   id="modalZona"></div>
     <!-- WHATSAPP -->
@@ -1064,7 +1069,7 @@ let lastTap = 0;
 document.addEventListener('touchend', e => { const now=Date.now(); if(now-lastTap<300) e.preventDefault(); lastTap=now; }, {passive:false});
 
 // ── VERSIÓN DE LA APP ────────────────────────────────────────────────────────
-const APP_VERSION = 'v4.5';   // ← cambiá solo acá
+const APP_VERSION = 'v4.6';   // ← cambiá solo acá
 document.addEventListener('DOMContentLoaded', () => {
   const lv = document.getElementById('loginVersion');
   const hv = document.getElementById('headerVersion');
@@ -1316,6 +1321,7 @@ function openModal(id) {
   if (stickyBadge) { stickyBadge.setAttribute('data-e', estado); stickyBadge.textContent = `${icons[estado]||''} ${estado}`; }
 
   document.getElementById('modalNombre').textContent = extra.n || '';
+  document.getElementById('modalNuevoBadge').style.display = (extra.condicion === 'NUEVO') ? 'inline-block' : 'none';
   document.getElementById('modalRubro').textContent  = data.rb || '(sin rubro)';
   document.getElementById('modalZona').textContent   = extra.contrato === 'SI' ? '✍️ Contrato firmado' : '';
 
@@ -1426,9 +1432,11 @@ function openModal(id) {
 
 // ── ASIGNAR FERIANTE – lógica de búsqueda ──────────────────────────────────
 let selectedFeriante = null;
+let selectedFerianteEsNuevo = false;
 
 function resetAssignUI() {
   selectedFeriante = null;
+  selectedFerianteEsNuevo = false;
   document.getElementById('assignSearch').value = '';
   document.getElementById('assignSearchClear').style.display = 'none';
   document.getElementById('assignDropdown').classList.remove('open');
@@ -1508,8 +1516,9 @@ function filterFeriantes() {
   dd.classList.add('open');
 }
 
-function selectFeriante(nombre) {
+function selectFeriante(nombre, esNuevo) {
   selectedFeriante = nombre;
+  selectedFerianteEsNuevo = !!esNuevo;
   document.getElementById('assignPillName').textContent = nombre;
   document.getElementById('assignPill').classList.add('visible');
   document.getElementById('assignSearchWrap').style.display = 'none';
@@ -1521,6 +1530,7 @@ function selectFeriante(nombre) {
 
 function clearAssignSelection() {
   selectedFeriante = null;
+  selectedFerianteEsNuevo = false;
   document.getElementById('assignPill').classList.remove('visible');
   document.getElementById('assignSearchWrap').style.display = 'block';
   document.getElementById('assignSearch').value = '';
@@ -1582,7 +1592,8 @@ async function asignarFeriante() {
     const responsableAsign = (CURRENT_PERFIL === 3 && vendedor) ? vendedor : CURRENT_USER;
     const mobParams = MOB_ITEMS.map(m => `${m.key}=${mobQty[m.key]||0}`).join('&');
     const adminParam = (CURRENT_PERFIL === 3 && vendedor) ? `&admin=${encodeURIComponent(CURRENT_USER)}` : '';
-    const urlAsignar = `${API_URL}?tipo=asignar&stand=${encodeURIComponent(currentStandId)}&feriante=${encodeURIComponent(feriante)}&user=${encodeURIComponent(responsableAsign)}&${mobParams}${adminParam}`;
+    const nuevoParam = selectedFerianteEsNuevo ? '&nuevo=SI' : '&nuevo=NO';
+    const urlAsignar = `${API_URL}?tipo=asignar&stand=${encodeURIComponent(currentStandId)}&feriante=${encodeURIComponent(feriante)}&user=${encodeURIComponent(responsableAsign)}&${mobParams}${adminParam}${nuevoParam}`;
     const resAsignar = await fetch(urlAsignar);
     const dataAsignar = await resAsignar.json();
     if (!dataAsignar.ok) {
@@ -2305,7 +2316,7 @@ async function guardarNuevoFeriante() {
       // Volver al panel principal y preseleccionar al nuevo feriante
       setTimeout(() => {
         closeAltaPanel();
-        selectFeriante(nombre);
+        selectFeriante(nombre, true);
       }, 1200);
     } else {
       msgEl.textContent = data.error || 'Error al dar de alta el feriante.';
